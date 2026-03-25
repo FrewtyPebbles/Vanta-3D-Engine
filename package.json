@@ -1,6 +1,6 @@
 {
   "name": "vanta-engine",
-  "version": "1.0.10",
+  "version": "1.0.16",
   "description": "A node based 3D and 2D engine compatible with web environments.",
   "type": "module",
   "repository": {
