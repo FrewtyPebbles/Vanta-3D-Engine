@@ -166,4 +166,8 @@ export class PointLight extends Light {
         }
         this.engine.graphics_manager.resize_point_shadow_map();
     }
+    cleanup(): void {
+        this.shader_program.cleanup();
+        super.cleanup();
+    }
 }

@@ -16,6 +16,19 @@ export interface VAOInfo {
     vertex_count:number;
 }
 
+export function cleanup_vaos(gm:GraphicsManager) {
+    gm.gl.deleteVertexArray(skybox_VAO)
+    gm.gl.deleteVertexArray(sprite_VAO)
+
+    skybox_VAO = null
+    skybox_VAO_index_count = 0;
+    skybox_VAO_vertex_count = 0;
+
+    sprite_VAO = null
+    sprite_VAO_index_count = 0;
+    sprite_VAO_vertex_count = 0;
+}
+
 export function get_skybox_vao(gm:GraphicsManager):VAOInfo {
     if (skybox_VAO)
         return {vao:skybox_VAO, index_count:skybox_VAO_index_count, vertex_count:skybox_VAO_vertex_count};
@@ -64,6 +77,9 @@ export function get_skybox_vao(gm:GraphicsManager):VAOInfo {
     // Unbind VAO
     gm.gl.bindVertexArray(null);
     gm.gl.bindBuffer(gm.gl.ARRAY_BUFFER, null);
+    gm.gl.bindBuffer(gm.gl.ELEMENT_ARRAY_BUFFER, null);
+    gm.gl.deleteBuffer(vbo);
+    gm.gl.deleteBuffer(ibo);
 
     return {vao:skybox_VAO, index_count:skybox_VAO_index_count, vertex_count:skybox_VAO_vertex_count};
 }
@@ -129,6 +145,9 @@ export function get_sprite_vao(gm:GraphicsManager):VAOInfo {
     // Unbind VAO
     gm.gl.bindVertexArray(null);
     gm.gl.bindBuffer(gm.gl.ARRAY_BUFFER, null);
+    gm.gl.bindBuffer(gm.gl.ELEMENT_ARRAY_BUFFER, null);
+    gm.gl.deleteBuffer(vbo);
+    gm.gl.deleteBuffer(ebo);
 
 
     return {vao:sprite_VAO, index_count:sprite_VAO_index_count, vertex_count:sprite_VAO_vertex_count};

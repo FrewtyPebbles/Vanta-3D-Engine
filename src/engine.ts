@@ -40,4 +40,8 @@ export default class Engine {
         await this.on_global_start_callback(this);
         this.graphics_manager.render();
     }
+
+    async stop() {
+        await this.graphics_manager.stop()
+    }
 };

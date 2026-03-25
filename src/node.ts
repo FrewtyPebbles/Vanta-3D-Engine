@@ -197,6 +197,12 @@ export class Node {
     protected render_class(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number): void {
         this.on_render(this, this.engine, time, delta_time);
     }
+
+    cleanup() {
+        for (const child of this.children) {
+            child.cleanup();
+        }
+    }
 }
 
 export class Node2D extends Node {

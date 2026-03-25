@@ -136,7 +136,11 @@ export class Texture implements Disposable {
         this.gm.gl.bindTexture(this.gm.gl.TEXTURE_2D_ARRAY, null);
     }
 
-    [Symbol.dispose](): void {
+    [Symbol.dispose]():void {
+        this.cleanup();
+    }
+
+    cleanup() {
         this.gm.gl.deleteTexture(this.webgl_texture);
     }
 
@@ -497,6 +501,10 @@ export class CubeMapTexture implements Disposable {
     }
 
     [Symbol.dispose](): void {
+        this.cleanup();
+    }
+
+    cleanup() {
         this.gm.gl.deleteTexture(this.webgl_texture);
     }
 

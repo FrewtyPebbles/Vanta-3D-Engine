@@ -1,5 +1,4 @@
 import { Vec3, Vec2, Mat4, Quat, Vec4, Mat2, Mat3 } from '@vicimpa/glm';
-import { Node3D, Node } from '../node';
 import Engine from '../engine';
 import { get_uniform_label_index, normalize_uniform_label } from './utility';
 import { ShaderProgram, WebGLUniformType } from './shader_program';
@@ -23,6 +22,7 @@ import DEFAULT_POINT_SHADOW_FRAGMENT_SHADER from "../shaders/default_point_shado
 import { PointLight } from '../node/lights/point_light';
 import { DirectionalLight } from '../node/lights/directional_light';
 import { SpotLight } from '../node/lights/spot_light';
+import { cleanup_vaos } from './assets/vaos';
 
 export type WebGLType = number;
 
@@ -64,6 +64,8 @@ export class GraphicsManager {
     point_shadow_depth_buffer:Framebuffer;
     directional_shadow_depth_buffer:Framebuffer;
     shadow_resolution:number = 1024 * 6;
+
+    stopping:boolean = false;
     
     constructor(engine:Engine, canvas:HTMLCanvasElement) {
         this.canvas = canvas;
@@ -472,7 +474,10 @@ export class GraphicsManager {
         this.render_frame();
     }
 
-    private render_frame(current_time: number = 0):number {        
+    private render_frame(current_time: number = 0):number {
+        if (this.stopping) {
+            return 0;
+        }
         
         // first frame, initialize and skip large delta
         if (this.last_frame_time === null) {
@@ -686,5 +691,28 @@ export class GraphicsManager {
         sp.build()
 
         return sp;
+    }
+
+    cleanup() {
+        this.default_2d_shader_program.cleanup();
+        this.default_3d_shader_program.cleanup();
+        this.default_skybox_shader_program.cleanup();
+        this.directional_shadow_depth_buffer.cleanup();
+        this.point_shadow_depth_buffer.cleanup();
+        for (const [_, shader_prog] of Object.entries(this.shader_programs)) {
+            shader_prog.cleanup();
+        }
+
+        for (const [_, framebuff] of Object.entries(this.framebuffers)) {
+            framebuff.cleanup();
+        }
+
+        // clean up skybox and sprite vaos:
+        cleanup_vaos(this);
+    }
+
+    async stop() {
+        this.stopping = true;
+        this.cleanup();
     }
 }

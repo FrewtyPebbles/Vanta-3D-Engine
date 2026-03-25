@@ -32,4 +32,8 @@ export class Model {
         if (!this.gm.engine.main_scene.rendering_depth_map)
             this.material.draw_end();
     }
+    cleanup() {
+        this.mesh.cleanup()
+        this.material.cleanup()
+    }
 }

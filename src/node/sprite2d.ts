@@ -54,4 +54,9 @@ export class Sprite2D extends Node2D {
         gm.clear_shader()
         gm.gl.disable(gm.gl.BLEND);
     }
+
+    cleanup() {
+        this.sprite_texture.cleanup()
+        super.cleanup()
+    }
 }

@@ -56,13 +56,28 @@ export class Mesh {
         gm.gl.bindBuffer(gm.gl.ELEMENT_ARRAY_BUFFER, ibo);
         gm.gl.bufferData(gm.gl.ELEMENT_ARRAY_BUFFER, indices as Uint16Array, gm.gl.STATIC_DRAW);
 
+        
         // Unbind VAO
         gm.gl.bindVertexArray(null);
+        
+        // Unbind buffers
+        gm.gl.bindBuffer(gm.gl.ARRAY_BUFFER, null);
+        gm.gl.bindBuffer(gm.gl.ELEMENT_ARRAY_BUFFER, null);
+        
+        // delete buffers
+        gm.gl.deleteBuffer(vboPositions);
+        gm.gl.deleteBuffer(vboNormals);
+        gm.gl.deleteBuffer(vboUVs);
+        gm.gl.deleteBuffer(ibo);
     }
 
     draw() {
         this.gm.gl.bindVertexArray(this.vao);
         this.gm.gl.drawElements(this.gm.gl.TRIANGLES, this.indexCount, this.gm.gl.UNSIGNED_SHORT, 0);
         this.gm.gl.bindVertexArray(null);
+    }
+
+    cleanup() {
+        this.gm.gl.deleteVertexArray(this.vao);
     }
 }

@@ -140,4 +140,22 @@ export class Material {
 
         this.gm.clear_shader();
     }
+
+    cleanup() {
+        if (this.albedo instanceof Texture) {
+            this.albedo.cleanup();
+        }
+        if (this.metalic instanceof Texture) {
+            this.metalic.cleanup();
+        }
+        if (this.roughness instanceof Texture) {
+            this.roughness.cleanup();
+        }
+        if (this.ao instanceof Texture) {
+            this.ao.cleanup();
+        }
+        if (this.normal instanceof Texture) {
+            this.normal.cleanup();
+        }
+    }
 }

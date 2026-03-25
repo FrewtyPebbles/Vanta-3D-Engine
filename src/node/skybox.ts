@@ -54,4 +54,8 @@ export class Skybox extends Node {
 
         gm.clear_shader();
     }
+    cleanup() {
+        this.cubemap_texture.cleanup()
+        super.cleanup()
+    }
 }

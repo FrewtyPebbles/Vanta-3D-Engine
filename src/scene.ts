@@ -62,4 +62,13 @@ export class Scene {
             console.warn(`A root node was not set for scene "${this.name}".`);
         }
     }
+
+    cleanup() {
+        if (this.root_node) {
+            this.root_node.cleanup();
+        }
+        if (this.main_camera_3d) {
+            this.main_camera_3d.cleanup();
+        }
+    }
 };

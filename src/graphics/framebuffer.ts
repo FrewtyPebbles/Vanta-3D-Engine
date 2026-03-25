@@ -106,7 +106,15 @@ export class Framebuffer implements Disposable {
     }
 
     [Symbol.dispose](): void {
+        this.cleanup();
+    }
+
+    cleanup() {
         this.gl.deleteFramebuffer(this.webgl_frame_buffer);
+
+        for (const [attachment_key, attachment] of Object.entries(this.attachment_info_map)) {
+            attachment.texture.cleanup();
+        }
     }
 
     set_attachment_texture_index(attachment_name:string, index:number) {        

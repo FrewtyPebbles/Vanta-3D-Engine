@@ -132,4 +132,10 @@ export class ShaderProgram {
     use() {
         this.gm.use_shader(this.name);
     }
+
+    cleanup() {
+        for (const shader of this.shaders) {
+            this.gl.deleteShader(shader)
+        }
+    }
 }

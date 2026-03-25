@@ -174,4 +174,9 @@ export class DirectionalLight extends Light {
 
         return new Mat4().orthoZO(min_x, max_x, min_y, max_y, max_z, min_z).mul(light_view);
     }
+
+    cleanup(): void {
+        this.shader_program.cleanup();
+        super.cleanup();
+    }
 }

@@ -83,4 +83,9 @@ export class Object3D extends Node3D {
 
         this.model.draw_end();
     }
+
+    cleanup() {
+        this.model.cleanup()
+        super.cleanup()
+    }
 }
