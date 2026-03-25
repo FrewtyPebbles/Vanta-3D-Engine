@@ -25,7 +25,6 @@ export default defineConfig({
   ],
   entry: ['src/index.ts'],
   platform: 'browser',
-  noExternal: ['wasmoon'],
   format: ['esm', 'cjs'],
   dts: true,
   sourcemap: true,

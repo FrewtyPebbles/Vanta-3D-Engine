@@ -555,7 +555,10 @@ export namespace AssetFile {
                         const blob = await res.blob();
                         if (map_type_string) {
                             texture_name = current_material.name + "_" + map_type_string;
-                            image_assets.set(texture_name, new Texture(engine.graphics_manager, texture_name, await createImageBitmap(blob, { imageOrientation: 'flipY' }), TextureType.COLOR, {}));
+                            image_assets.set(texture_name, new Texture(engine.graphics_manager, texture_name, await createImageBitmap(blob, { imageOrientation: 'flipY' }), TextureType.COLOR, {
+                                [engine.graphics_manager.gl.TEXTURE_MIN_FILTER]: engine.graphics_manager.gl.LINEAR_MIPMAP_LINEAR,
+                                [engine.graphics_manager.gl.TEXTURE_MAG_FILTER]: engine.graphics_manager.gl.LINEAR
+                            }, 10));
                         } else {
                             throw Error(`A parsing error has occured that should not be possible while parsing a .mtl file map.`)
                         }
@@ -935,7 +938,10 @@ export async function load_obj(gm:GraphicsManager, model_path:string, image_asse
         const res = await fetch(image_asset_path);
         if (res.ok) {
             const blob = await res.blob();
-            image_assets.push(new Texture(gm, image_asset_path, await createImageBitmap(blob, { imageOrientation: 'flipY' }), TextureType.COLOR, {}));
+            image_assets.push(new Texture(gm, image_asset_path, await createImageBitmap(blob, { imageOrientation: 'flipY' }), TextureType.COLOR, {
+                [gm.gl.TEXTURE_MIN_FILTER]: gm.gl.LINEAR_MIPMAP_LINEAR,
+                [gm.gl.TEXTURE_MAG_FILTER]: gm.gl.LINEAR
+            }, 10));
         } else {
             throw new Error(`The .obj image asset file at "${image_asset_path}" does not exist.`);
         }

@@ -289,13 +289,12 @@ export class Texture implements Disposable {
                 image as TexImageSource
             );
 
+        this.gm.gl.generateMipmap(this.gm.gl.TEXTURE_2D);
         
         for (let [parameter_name_string, parameter_value] of Object.entries(texture_parameters)) {
             let parameter_name = Number(parameter_name_string);
             this.gm.gl.texParameteri(this.gm.gl.TEXTURE_2D, parameter_name, parameter_value);
         }
-
-        this.gm.gl.generateMipmap(this.gm.gl.TEXTURE_2D);
             
         this.gm.gl.bindTexture(this.gm.gl.TEXTURE_2D, null);
 

@@ -63,7 +63,7 @@ export class GraphicsManager {
     point_light_shadow_map_texture:Texture;
     point_shadow_depth_buffer:Framebuffer;
     directional_shadow_depth_buffer:Framebuffer;
-    shadow_resolution:number = 1024 * 6;
+    shadow_resolution:number = 1024;
 
     stopping:boolean = false;
     
