@@ -1,204 +1,134 @@
 import { GraphicsManager } from "../graphics_manager";
-import { ShaderProgram, UBO } from "../shader_program";
+import { ShaderProgram } from "../shader_program";
 import Engine from "../../engine";
 
-type UBOBaseConstructor = new (...args: any[]) => { gm: GraphicsManager }|{ graphics_manager: GraphicsManager }|{ engine: Engine };
-
-type UBOBaseConstructorUNION = new (...args: any[]) => {
-    gm?: GraphicsManager;
-    graphics_manager?: GraphicsManager;
-    engine?: Engine;
+export enum MEMORY_USAGE_MODE {
+    STATIC_DRAW,
+    DYNAMIC_DRAW,
+    STREAM_DRAW,
+    STATIC_READ,
+    DYNAMIC_READ,
+    STREAM_READ,
+    STATIC_COPY,
+    DYNAMIC_COPY,
+    STREAM_COPY,
 };
 
-export interface ParameterMapping {
-    class_property:string;
-    uniform_property:string;
-    type_check?:UBOBaseConstructor|string;
+interface UBOMemberData {
+    index:number
+    offset:number
 }
 
-const p:ParameterMapping = {
-    class_property:"",
-    uniform_property:"",
-    type_check:"number"
-}
+export class UniformBufferObject {
+    shader_program:ShaderProgram
+    graphics_manager:GraphicsManager
+    name:string
+    members:{[key:string]:UBOMemberData} = {}
+    gl_buffer:WebGLBuffer
+    gl_ubo_block_index: number
+    gl_ubo_block_size: number
+    memory_usage_mode:MEMORY_USAGE_MODE
+    private gl_memory_usage_mode:number
+    gl_ubo_index:number
+    static ubo_counter:number = 0
+    constructor(shader_program:ShaderProgram, name:string, members:string[], memory_usage_mode:MEMORY_USAGE_MODE = MEMORY_USAGE_MODE.DYNAMIC_DRAW) {
+        this.shader_program = shader_program;
+        this.graphics_manager = this.shader_program.gm;
+        this.name = name;
 
-
-export function UniformBufferObjectMixin<TBase extends UBOBaseConstructor>(
-    Base: TBase, location:string, parameter_mapping:ParameterMapping[],
-    auto_send_buffer_data:boolean = true
-) {
-    class UniformBufferObjectMixin extends (Base as UBOBaseConstructorUNION) {
-        static shader_programs:ShaderProgram[] = []
-        static UBO_dirty:boolean = false;
-        constructor(...args:any[]) {
-            super(...args);
-            for (const parameter of parameter_mapping) {
-                const property = parameter.class_property;
-                
-                let value = (this as any)[property];
-
-                Object.defineProperty(this, property, {
-                    get: () => (this as any)["stored_" + property],
-                    set: (new_value) => {
-                        if (value !== new_value) {
-                            (this as any)["stored_" + property] = new Proxy(new_value, {
-                                set: (target, p, nv) => {
-                                    (target as any)[p] = nv;
-                                    return this._on_property_change(property, new_value);
-                                }
-                            });
-                            this._on_property_change(property, new_value);
-                        }
-                    },
-                    enumerable: true,
-                    configurable: true
-                });
-
-                (this as any)["stored_" + property] = value;
-            }
+        const gl = this.graphics_manager.gl;
+        this.memory_usage_mode = memory_usage_mode;
+        switch (this.memory_usage_mode) {
+            case MEMORY_USAGE_MODE.DYNAMIC_DRAW:
+                this.gl_memory_usage_mode = gl.DYNAMIC_DRAW;
+                break;
+            case MEMORY_USAGE_MODE.STATIC_DRAW:
+                this.gl_memory_usage_mode = gl.STATIC_DRAW;
+                break;
+            case MEMORY_USAGE_MODE.STREAM_DRAW:
+                this.gl_memory_usage_mode = gl.STREAM_DRAW;
+                break;
+            case MEMORY_USAGE_MODE.STATIC_READ:
+                this.gl_memory_usage_mode = gl.STATIC_READ;
+                break;
+            case MEMORY_USAGE_MODE.DYNAMIC_READ:
+                this.gl_memory_usage_mode = gl.DYNAMIC_READ;
+                break;
+            case MEMORY_USAGE_MODE.STREAM_READ:
+                this.gl_memory_usage_mode = gl.STREAM_READ;
+                break;
+            case MEMORY_USAGE_MODE.STATIC_COPY:
+                this.gl_memory_usage_mode = gl.STATIC_COPY;
+                break;
+            case MEMORY_USAGE_MODE.DYNAMIC_COPY:
+                this.gl_memory_usage_mode = gl.DYNAMIC_COPY;
+                break;
+            case MEMORY_USAGE_MODE.STREAM_COPY:
+                this.gl_memory_usage_mode = gl.STREAM_COPY;
+                break;
         }
 
-        _on_property_change(prop: string, value: any):boolean {
-            UniformBufferObjectMixin.UBO_dirty = true;
+        // Create the gl buffer
 
-            if (auto_send_buffer_data) {
-                let gm:GraphicsManager|null = null;
-                if ("engine" in this) {
-                    gm = this.engine!.graphics_manager;
-                } else if ("gm" in this) {
-                    gm = this.gm!;
-                } else if ("graphics_manager" in this) {
-                    gm = this.graphics_manager!;
-                }
-                
-                if (gm === null) {
-                    console.error(`Couldn't find graphics manager when the property named "${prop}" changed of the UBO at location "${location}".`);
-                    return true;
-                }
-                const data = GraphicsManager.flatten_uniform_array_value(value);
-    
-                for (const shader_program of UniformBufferObjectMixin.shader_programs) {
-                    gm.gl.bindBuffer(gm.gl.UNIFORM_BUFFER, shader_program.ubos[location].webgl_buffer);
-                    gm.gl.bufferSubData(
-                        gm.gl.UNIFORM_BUFFER,
-                        shader_program.ubos[location][prop].offset,
-                        data,
-                        0
-                    );
-                }
-                gm.gl.bindBuffer(gm.gl.UNIFORM_BUFFER, null);
-            }
+        this.gl_ubo_block_index = gl.getUniformBlockIndex(this.shader_program, this.name);
 
-            return true;
+        this.gl_ubo_block_size = gl.getActiveUniformBlockParameter(this.shader_program, this.gl_ubo_block_index, gl.UNIFORM_BLOCK_DATA_SIZE);
+
+        this.gl_buffer = gl.createBuffer();
+
+        gl.bindBuffer(gl.UNIFORM_BUFFER, this.gl_buffer);
+
+        gl.bufferData(gl.UNIFORM_BUFFER, this.gl_ubo_block_size, this.gl_memory_usage_mode);
+        
+        gl.bindBuffer(gl.UNIFORM_BUFFER, null);
+        this.gl_ubo_index = UniformBufferObject.ubo_counter;
+        gl.bindBufferBase(gl.UNIFORM_BUFFER, this.gl_ubo_index, this.gl_buffer);
+
+        const member_indices = gl.getUniformIndices(this.shader_program.webgl_shader_program!, members);
+
+        if (member_indices === null) {
+            throw Error(`Failed to get member indices ${members} of UBO "${this.name}".`);
         }
 
-        send_UBO() {
-            var gm:GraphicsManager|null = null;
-            for (const shader_program of UniformBufferObjectMixin.shader_programs) {
-                gm = shader_program.gm;
-                gm.gl.bindBuffer(gm.gl.UNIFORM_BUFFER, shader_program.ubos[location].webgl_buffer);
-                for (const parameter of parameter_mapping) {
-                    const data = GraphicsManager.flatten_uniform_array_value((this as any)[parameter.class_property]);
-                    gm.gl.bufferSubData(
-                        gm.gl.UNIFORM_BUFFER,
-                        shader_program.ubos[location][parameter.class_property].offset,
-                        data,
-                        0
-                    );
-                }
+        const member_offsets = gl.getActiveUniforms(this.shader_program.webgl_shader_program!, member_indices, gl.UNIFORM_OFFSET);
+
+        members.forEach((name, index) => {
+            this.members[name] = {
+                index: member_indices[index],
+                offset: member_offsets[index]
             }
-            if (gm)
-                gm.gl.bindBuffer(gm.gl.UNIFORM_BUFFER, null);
+        });
 
-            // After sending set this flag
-            UniformBufferObjectMixin.UBO_dirty = false;
-        }
+        let index = gl.getUniformBlockIndex(this.shader_program.webgl_shader_program!, this.name);
+        gl.uniformBlockBinding(this.shader_program.webgl_shader_program!, index, this.gl_ubo_index);
 
-        check_UBO():boolean {
-            for (const parameter of parameter_mapping) {
-                if (!(parameter.class_property in this)) {
-                    console.error(`Required UBO class property "${parameter.class_property}" not found in class "${Base.name}".`);
-                    return false;
-                }
-                else if (parameter.type_check !== undefined)
-                    if (typeof parameter.type_check === "string") {
-                        if (typeof this[parameter.class_property as keyof this] !== parameter.type_check) {
-                            console.error(`Required UBO class property "${parameter.class_property}" in class definition "${Base.name}" must be of type "${parameter.type_check}".`);
-                            return false;
-                        }
-                    } else if (this[parameter.class_property as keyof this] instanceof parameter.type_check) {
-                        console.error(`Required UBO class property "${parameter.class_property}" in class definition "${Base.name}" must be of type "${parameter.type_check.name}".`);
-                        return false;
-                    }
-            }
-            return true;
-        }
-
-        static create_UBO(shader_program:ShaderProgram) {
-
-            UniformBufferObjectMixin.shader_programs.push(shader_program);
-            
-            const gm = shader_program.gm;
-
-            const block_index = gm.gl.getUniformBlockIndex(shader_program, location);
-
-            const block_size = gm.gl.getActiveUniformBlockParameter(
-                shader_program,
-                block_index,
-                gm.gl.UNIFORM_BLOCK_DATA_SIZE
-            );
-
-            const ubo_buffer = gm.gl.createBuffer();
-
-            shader_program.ubos[location] = {
-                webgl_buffer:ubo_buffer
-            } as UBO;
-
-            gm.gl.bindBuffer(gm.gl.UNIFORM_BUFFER, ubo_buffer);
-
-            gm.gl.bufferData(gm.gl.UNIFORM_BUFFER, block_size, gm.gl.DYNAMIC_DRAW);
-
-            gm.gl.bindBuffer(gm.gl.UNIFORM_BUFFER, null);
-
-            gm.gl.bindBufferBase(gm.gl.UNIFORM_BUFFER, shader_program.ubo_counter, ubo_buffer);
-
-            ++shader_program.ubo_counter;
-
-            var uniform_parameters:string[] = [];
-            var class_parameters:string[] = [];
-
-            for (var parameter of parameter_mapping) {
-                uniform_parameters.push(parameter.uniform_property);
-                class_parameters.push(parameter.class_property);
-            }
-
-            const ubo_variable_indices = gm.gl.getUniformIndices(
-                shader_program,
-                uniform_parameters
-            );
-
-            if (ubo_variable_indices === null) {
-                throw new Error(`Failed to find an uniform buffer object named "${location}" in the shader program named "${shader_program.name}" with the properties named "` + uniform_parameters.join("\", \"") + "\".")
-            }
-
-            const ubo_variable_offsets = gm.gl.getActiveUniforms(
-                shader_program,
-                ubo_variable_indices,
-                gm.gl.UNIFORM_OFFSET
-            );
-
-            for (var i = 0; i < class_parameters.length; ++i) {
-                shader_program.ubos[location][class_parameters[i]] = {
-                    label: uniform_parameters[i],
-                    index: ubo_variable_indices[i],
-                    offset: ubo_variable_offsets[i]
-                }
-            }
-        }
+        // increment the UBO counter
+        UniformBufferObject.ubo_counter++;
     }
-    return UniformBufferObjectMixin as UBOBaseConstructor as TBase & {
-        new (...args: ConstructorParameters<TBase>): UniformBufferObjectMixin;
-        create_UBO(shader_program:ShaderProgram):void;
+
+    bind() {
+        const gl = this.graphics_manager.gl;
+        gl.bindBuffer(gl.UNIFORM_BUFFER, this.gl_buffer);
+    }
+
+    unbind() {
+        const gl = this.graphics_manager.gl;
+        gl.bindBuffer(gl.UNIFORM_BUFFER, null);
+    }
+
+    set_uniform(name:string, value:any, bind:boolean = false) {
+        const gl = this.graphics_manager.gl;
+        if (bind)
+            gl.bindBuffer(gl.UNIFORM_BUFFER, this.gl_buffer);
+
+        gl.bufferSubData(gl.UNIFORM_BUFFER, this.members[name].offset, value);
+
+        if (bind)
+            gl.bindBuffer(gl.UNIFORM_BUFFER, null);
+    }
+
+    cleanup() {
+        const gl = this.graphics_manager.gl;
+        gl.deleteBuffer(this.gl_buffer);
     }
 }
-

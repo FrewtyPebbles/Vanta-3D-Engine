@@ -1,5 +1,6 @@
 import { GraphicsManager } from "./graphics_manager";
 import { get_uniform_label_index, normalize_uniform_label } from "./utility";
+import { MEMORY_USAGE_MODE, UniformBufferObject } from "./assets/uniform_buffer";
 
 export type WebGLShaderType = number;
 
@@ -32,22 +33,6 @@ export interface WebGLUniform {
     texture_unit?:number;
 };
 
-interface UBOParameter {
-    label: string;
-    index: number;
-    offset: number;
-}
-
-interface UBOBase {
-    webgl_buffer: WebGLBuffer;
-}
-
-interface UBOParameters {
-    [parameter:string]: UBOParameter;
-}
-
-export type UBO = UBOBase & UBOParameters;
-
 export class ShaderProgram {
     gl:WebGLRenderingContext;
     gm:GraphicsManager;
@@ -57,8 +42,7 @@ export class ShaderProgram {
     uniforms:{[key:string]:WebGLUniform} = {};
     uniform_locs:{[key:string]:WebGLUniformLocation|null} = {};
     texture_counter:number = 0;
-    ubo_counter:number = 0;
-    ubos:{[location:string]:UBO} = {}
+    ubos:{[key:string]:UniformBufferObject} = {}
 
     constructor(name:string, gm:GraphicsManager, gl:WebGLRenderingContext) {
         this.gm = gm;
@@ -74,6 +58,22 @@ export class ShaderProgram {
             console.error(this.gl.getShaderInfoLog(shader));
         }
         this.shaders.push(shader);
+    }
+
+    add_ubo(name:string, members:string[], memory_usage_mode:MEMORY_USAGE_MODE = MEMORY_USAGE_MODE.DYNAMIC_DRAW) {
+        this.ubos[name] = new UniformBufferObject(this, name, members, memory_usage_mode);
+    }
+
+    set_ubo_member(ubo_name:string, name:string, value:any, bind:boolean = false) {
+        this.ubos[ubo_name].set_uniform(name, value, bind);
+    }
+
+    bind_ubo(name:string) {
+        this.ubos[name].bind();
+    }
+
+    unbind_ubo(name:string) {
+        this.ubos[name].unbind();
     }
 
     add_uniform(label:string, uniform_type:WebGLUniformType) {
