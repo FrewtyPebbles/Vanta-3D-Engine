@@ -1,6 +1,7 @@
 import { GraphicsManager } from "../graphics_manager";
 import { ShaderProgram } from "../shader_program";
 import Engine from "../../engine";
+import { Mat2, Mat3, Mat4, Vec2, Vec3, Vec4 } from "@vicimpa/glm";
 
 export enum WebGLUniformType {
     TEXTURE_2D,
@@ -40,6 +41,7 @@ function align(offset:number, alignment:number) {
     return (offset + alignment - 1) & ~(alignment - 1);
 }
 
+type UniformValueType = Vec2|Vec3|Vec4|Mat2|Mat3|Mat4|number|boolean;
 
 export class UBOMember {
     ubo:UniformBufferObject
@@ -61,53 +63,57 @@ export class UBOMember {
         this.memory_view = new DataView(memory);
     }
 
-    set_uniform(value: any) {
-        switch (this.type as WebGLUniformType) {
-            case WebGLUniformType.F:
-                this.memory_view?.setFloat32(this.offset, value, true);
-                break;
+    static flatten_uniform_value(value:UniformValueType):Float32Array {
+        if (typeof value !== "number" && typeof value !== "boolean") {
+            return new Float32Array(value.toArray())
+        } else if (typeof value === "boolean") {
+            return new Float32Array([value ? 1 : 0])
+        } else {
+            return new Float32Array([value])
+        }
+    }
+
+    set_uniform(value: UniformValueType) {
+        if (!this.memory_view) return;
+
+        const view = this.memory_view;
+        const off = this.offset;
+
+        // Helper to get raw array from GLM types
+        const data = (typeof value === "object" && "toArray" in value) ? (value as any).toArray() : 
+                     (Array.isArray(value) ? value : [Number(value)]);
+
+        switch (this.type) {
+            case WebGLUniformType.F: 
+                view.setFloat32(off, data[0], true); break;
+            case WebGLUniformType.I: case WebGLUniformType.B: 
+                view.setInt32(off, data[0], true); break;
             
-            case WebGLUniformType.I:
-                this.memory_view?.setInt32(this.offset, value, true);
+            case WebGLUniformType.F2V: case WebGLUniformType.F3V: case WebGLUniformType.F4V:
+                data.forEach((v: number, i: number) => view.setFloat32(off + (i * 4), v, true));
                 break;
 
-            case WebGLUniformType.B:
-                this.memory_view?.setInt32(this.offset, value, true);
+            case WebGLUniformType.I2V: case WebGLUniformType.I3V: case WebGLUniformType.I4V:
+                data.forEach((v: number, i: number) => view.setInt32(off + (i * 4), v, true));
                 break;
 
-            case WebGLUniformType.F2V:
-                this.memory_view?.setFloat32(this.offset, value, true);
-                break;
-            case WebGLUniformType.I2V:
-                this.memory_view?.setInt32(this.offset, value, true);
-                break;
-
-            case WebGLUniformType.F3V:
-                this.memory_view?.setFloat32(this.offset, value, true);
+            case WebGLUniformType.F2M: // Mat2: 2 columns, each treated as vec4
+                for(let i=0; i<2; i++) {
+                    view.setFloat32(off + (i * 16) + 0, data[i*2+0], true);
+                    view.setFloat32(off + (i * 16) + 4, data[i*2+1], true);
+                }
                 break;
 
-            case WebGLUniformType.I3V:
-                this.memory_view?.setInt32(this.offset, value, true);
+            case WebGLUniformType.F3M: // Mat3: 3 columns, each treated as vec4
+                for(let i=0; i<3; i++) {
+                    view.setFloat32(off + (i * 16) + 0, data[i*3+0], true);
+                    view.setFloat32(off + (i * 16) + 4, data[i*3+1], true);
+                    view.setFloat32(off + (i * 16) + 8, data[i*3+2], true);
+                }
                 break;
 
-            case WebGLUniformType.F4V:
-                this.memory_view?.setFloat32(this.offset, value, true);
-                break;
-
-            case WebGLUniformType.I4V:
-                this.memory_view?.setInt32(this.offset, value, true);
-                break;
-
-            case WebGLUniformType.F2M:
-                this.memory_view?.setFloat32(this.offset, value, true);
-                break;
-            
-            case WebGLUniformType.F3M:
-                this.memory_view?.setFloat32(this.offset, value, true);
-                break;
-
-            case WebGLUniformType.F4M:
-                this.memory_view?.setFloat32(this.offset, value, true);
+            case WebGLUniformType.F4M: // Mat4: 4 columns of vec4
+                data.forEach((v: number, i: number) => view.setFloat32(off + (i * 4), v, true));
                 break;
         }
     }
@@ -152,8 +158,6 @@ export class UBOMember {
 
     get_type_size(type:WebGLUniformType):number {
         switch (type) {
-            case WebGLUniformType.STRUCT:
-                return -1;
         
             case WebGLUniformType.F:
                 return 4;
@@ -184,8 +188,9 @@ export class UBOMember {
 
             case WebGLUniformType.F4M:
                 return 64;
+            default:
+                return 0;
         }
-        throw Error("Invalid UBOMember Type.")
     }
 }
 
@@ -381,67 +386,75 @@ export class UniformBufferObject {
 
     build() {
         const gl = this.graphics_manager.gl;
+
         this.gl_ubo_block_index = gl.getUniformBlockIndex(this.shader_program.webgl_shader_program!, this.name);
+        if (this.gl_ubo_block_index === 0xFFFFFFFF) {
+            console.warn(`UBO "${this.name}" not found in shader. It might be entirely unused.`);
+        }
 
-        this.gl_ubo_block_size = gl.getActiveUniformBlockParameter(this.shader_program.webgl_shader_program!, this.gl_ubo_block_index, gl.UNIFORM_BLOCK_DATA_SIZE);
-
-        this.gl_buffer = gl.createBuffer();
-
+        this.gl_buffer = gl.createBuffer()!;
         gl.bindBuffer(gl.UNIFORM_BUFFER, this.gl_buffer);
-
-        gl.bufferData(gl.UNIFORM_BUFFER, this.gl_ubo_block_size, this.gl_memory_usage_mode);
         
-        gl.bindBuffer(gl.UNIFORM_BUFFER, null);
-        this.gl_ubo_index = UniformBufferObject.ubo_counter;
-        gl.bindBufferBase(gl.UNIFORM_BUFFER, this.gl_ubo_index, this.gl_buffer);
-
+        // calculate offset manually
+        let current_offset = 0;
         const names = Object.keys(this.raw_members);
-        const member_indices = gl.getUniformIndices(this.shader_program.webgl_shader_program!, names);
+        
+        // still get indices for debugging
+        const member_indices = gl.getUniformIndices(this.shader_program.webgl_shader_program!, names) || [];
 
-        if (member_indices === null) {
-            throw Error(`Failed to get any uniform indices for UBO "${this.name}".`);
-        }
+        names.forEach((name, index) => {
+            const type = this.raw_members[name];
+            const gl_index = member_indices[index] ?? -1;
 
-        // Check if any specific index is invalid
-        for (let i = 0; i < member_indices.length; i++) {
-            if (member_indices[i] === 4294967295) { // gl.INVALID_INDEX
-                console.warn(`UBO Member "${names[i]}" is inactive and will be skipped.`);
+            let member_align = 16; // Default for structs/arrays
+            if (!(type instanceof ArrayMember) && typeof type === 'number') {
+                member_align = this.get_alignment_helper(type as WebGLUniformType);
             }
-        }
 
-        const member_offsets = gl.getActiveUniforms(this.shader_program.webgl_shader_program!, member_indices, gl.UNIFORM_OFFSET);
+            current_offset = align(current_offset, member_align);
 
-        if (member_offsets === null) {
-            // This confirms at least one index was gl.INVALID_INDEX
-            throw Error(`gl.getActiveUniforms returned null. One or more members in "${this.name}" are likely optimized out by the shader.`);
-        }
-
-        this.size = 0;
-
-        Object.entries(this.raw_members).forEach(([name, type], index) => {
             if (type instanceof ArrayMember) {
-                this.members[name] = new UBOMemberArray(this, type.type, type.length, member_indices[index], member_offsets[index]);
-            } else if (Object.values(WebGLUniformType).includes(type as WebGLUniformType)) {
-                this.members[name] = new UBOMember(this, type as WebGLUniformType, member_indices[index], member_offsets[index]);
+                const member = new UBOMemberArray(this, type.type, type.length, gl_index, current_offset);
+                this.members[name] = member;
+                current_offset += member.size;
+            } else if (typeof type === 'number') {
+                const t = type as WebGLUniformType;
+                const member = new UBOMember(this, t, gl_index, current_offset);
+                this.members[name] = member;
+                current_offset += member.size;
             } else {
-                this.members[name] = new UBOMemberStruct(this, type as Members, member_indices[index], member_offsets[index]);
+                const member = new UBOMemberStruct(this, type as Members, gl_index, current_offset);
+                this.members[name] = member;
+                current_offset += member.size;
             }
-            const cumu_size = this.members[name].offset + this.members[name].size;
-            if (cumu_size > this.size)
-                this.size = cumu_size;
         });
 
-        let index = gl.getUniformBlockIndex(this.shader_program.webgl_shader_program!, this.name);
-        gl.uniformBlockBinding(this.shader_program.webgl_shader_program!, index, this.gl_ubo_index);
+        this.size = align(current_offset, 16);
 
-        // increment the UBO counter
+        gl.bufferData(gl.UNIFORM_BUFFER, this.size, this.gl_memory_usage_mode);
+        gl.bindBuffer(gl.UNIFORM_BUFFER, null);
+
+        this.gl_ubo_index = UniformBufferObject.ubo_counter;
+        gl.bindBufferBase(gl.UNIFORM_BUFFER, this.gl_ubo_index, this.gl_buffer);
+        gl.uniformBlockBinding(this.shader_program.webgl_shader_program!, this.gl_ubo_block_index, this.gl_ubo_index);
+
         UniformBufferObject.ubo_counter++;
 
-        // CREATE MEMORY MIRROR
+        // create Memory Mirror
         this.memory_mirror = new ArrayBuffer(this.size);
-
         for (const member of Object.values(this.members)) {
             member.set_memory_view(this.memory_mirror);
+        }
+    }
+
+    private get_alignment_helper(type: WebGLUniformType): number {
+        switch (type) {
+            case WebGLUniformType.F: return 4;
+            case WebGLUniformType.I: return 4;
+            case WebGLUniformType.B: return 4;
+            case WebGLUniformType.F2V: return 8;
+            case WebGLUniformType.I2V: return 8;
+            default: return 16; // vec3, vec4, matrices all align to 16
         }
     }
 

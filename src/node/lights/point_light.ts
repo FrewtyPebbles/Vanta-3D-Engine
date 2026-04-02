@@ -147,7 +147,7 @@ export class PointLight extends Light {
         var u_global_ubo = this.engine.graphics_manager.shader_program?.ubos["u_global"];
         
         if (u_global_ubo === undefined)
-            throw Error("u_global ubo is undefined");
+            throw Error(`u_global ubo is undefined for ${this.engine.graphics_manager.shader_program!.name}`);
 
         var light_struct = (u_global_ubo.members[array_name] as UBOMemberArray).elements[index] as UBOMemberStruct;
         light_struct.members["position"].set_uniform(this.get_world_position());
@@ -155,7 +155,9 @@ export class PointLight extends Light {
 
         // Set shadow map uniforms        
         this.engine.graphics_manager.set_uniform(`point_light_shadow_maps`, this.framebuffer.attachment_info_map["depth"].texture);
-        (u_global_ubo.members["u_point_light_space_matrix"] as UBOMemberArray).elements[index * 6].set_uniform(this.point_light_space_matrices);
+        for (let i = 0; i < 6; ++i) {
+            (u_global_ubo.members["u_point_light_space_matrix"] as UBOMemberArray).elements[index * 6 + i].set_uniform(this.point_light_space_matrices[i]);
+        }
 
         super.set_uniforms(array_name, index);
     }

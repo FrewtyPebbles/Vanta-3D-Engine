@@ -46,6 +46,12 @@ export class ShaderProgram {
         this.ubos[ubo_name].set_uniform(name, value, bind);
     }
 
+    set_all_uniforms() {
+        for (const ubo of Object.values(this.ubos)) {
+            ubo.set_all(true);
+        }
+    }
+
     bind_ubo(name:string) {
         this.ubos[name].bind();
     }

@@ -22,23 +22,20 @@ export class Object3D extends Node3D {
         const gm = this.engine.graphics_manager;
 
         var u_global_ubo = gm.shader_program?.ubos["u_global"];
-        
-        if (u_global_ubo === undefined)
-            throw Error("u_global ubo is undefined");
-        
-        u_global_ubo.bind();
-
-        const skybox = this.get_parent_of_type(Skybox);
-        if (skybox)
-            (u_global_ubo.members["environment"] as UBOMemberStruct).members["ambient_light"].set_uniform(skybox.ambient_light);
-
-        const main_camera_3d = this.engine.main_scene.main_camera_3d
-
-        // CAMERA POS
-        if (main_camera_3d) {
-            u_global_ubo.members["camera_position"].set_uniform(main_camera_3d.position);
-        } else {
-            throw Error(`Main scene "${this.engine.main_scene.name}" does not have a main_camera_3d set which is required to render Object3Ds such as the node named "${this.name}".`);
+        if (u_global_ubo) {
+    
+            const skybox = this.get_parent_of_type(Skybox);
+            if (skybox)
+                (u_global_ubo.members["environment"] as UBOMemberStruct).members["ambient_light"].set_uniform(skybox.ambient_light);
+    
+            const main_camera_3d = this.engine.main_scene.main_camera_3d
+    
+            // CAMERA POS
+            if (main_camera_3d) {
+                u_global_ubo.members["camera_position"].set_uniform(main_camera_3d.position);
+            } else {
+                throw Error(`Main scene "${this.engine.main_scene.name}" does not have a main_camera_3d set which is required to render Object3Ds such as the node named "${this.name}".`);
+            }
         }
 
         // PASS IN LIGHTS
@@ -61,26 +58,28 @@ export class Object3D extends Node3D {
         var local_mesh_center = this.model.mesh.center;
         var mesh_center = new Vec4(local_mesh_center.x, local_mesh_center.y, local_mesh_center.z, 1.0).applyMat4(this.get_world_matrix())
 
-        for (var i = 0; i < n; ++i) {
-            if (i < point_lights_count) {
-                const light = point_lights[i];
-                if (mesh_center.xyz.distance(light.position) - mesh_size / 2.0 < light.range)
-                    light.set_uniforms("point_lights", i);
+        if (u_global_ubo) {
+            for (var i = 0; i < n; ++i) {
+                if (i < point_lights_count) {
+                    const light = point_lights[i];
+                    if (mesh_center.xyz.distance(light.position) - mesh_size / 2.0 < light.range)
+                        light.set_uniforms("point_lights", i);
+                }
+                if (i < spot_lights_count)
+                    spot_lights[i].set_uniforms("spot_lights", i);
+                if (i < directional_lights_count)
+                    directional_lights[i].set_uniforms("directional_lights", i);
             }
-            if (i < spot_lights_count)
-                spot_lights[i].set_uniforms("spot_lights", i);
-            if (i < directional_lights_count)
-                directional_lights[i].set_uniforms("directional_lights", i);
+
+            u_global_ubo.members["directional_lights_count"].set_uniform(directional_lights_count);
+            u_global_ubo.members["point_lights_count"].set_uniform(point_lights_count);
+            u_global_ubo.members["spot_lights_count"].set_uniform(spot_lights_count);
+
+            //PASS SHADOW MAPS
+            gm.set_uniform("directional_light_shadow_maps", gm.directional_light_shadow_map_texture)
+            gm.set_uniform("point_light_shadow_maps", gm.point_light_shadow_map_texture)
+            u_global_ubo.members["shadow_map_size"].set_uniform(new Vec2(gm.shadow_resolution));
         }
-
-        u_global_ubo.members["directional_lights_count"].set_uniform(directional_lights_count);
-        u_global_ubo.members["point_lights_count"].set_uniform(point_lights_count);
-        u_global_ubo.members["spot_lights_count"].set_uniform(spot_lights_count);
-
-        //PASS SHADOW MAPS
-        gm.set_uniform("directional_light_shadow_maps", gm.directional_light_shadow_map_texture)
-        gm.set_uniform("point_light_shadow_maps", gm.point_light_shadow_map_texture)
-        u_global_ubo.members["shadow_map_size"].set_uniform(new Vec2(gm.shadow_resolution));
 
         // pass the MVP matrix
         gm.set_uniform("u_model", this.get_world_matrix());
@@ -88,9 +87,7 @@ export class Object3D extends Node3D {
         gm.set_uniform("u_view", view_matrix);
 
         gm.set_uniform("u_projection", projection_matrix_3d);
-
-        u_global_ubo.unbind();
-
+        
         this.model.draw_end();
     }
 

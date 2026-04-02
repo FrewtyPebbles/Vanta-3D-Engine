@@ -68,7 +68,6 @@ export class DirectionalLight extends Light {
                 time, delta_time
             );
 
-
             this.engine.graphics_manager.unuse_framebuffer();
 
             this.engine.graphics_manager.clear_shader();
@@ -88,7 +87,7 @@ export class DirectionalLight extends Light {
             var u_global_ubo = this.engine.graphics_manager.shader_program?.ubos["u_global"];
         
             if (u_global_ubo === undefined)
-                throw Error("u_global ubo is undefined");
+                throw Error(`u_global ubo is undefined for ${this.engine.graphics_manager.shader_program!.name}`);
             
             ((u_global_ubo.members[array_name] as UBOMemberArray).elements[index] as UBOMemberStruct).members["rotation"].set_uniform(world_rotation_matrix);
             (u_global_ubo.members["u_directional_light_space_matrix"] as UBOMemberArray).elements[index].set_uniform(this.directional_light_space_matrix);

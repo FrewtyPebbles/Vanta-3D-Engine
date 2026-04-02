@@ -44,7 +44,7 @@ export class Light extends Node3D {
         var u_global_ubo = this.engine.graphics_manager.shader_program?.ubos["u_global"];
         
         if (u_global_ubo === undefined)
-            throw Error("u_global ubo is undefined");
+            throw Error(`u_global ubo is undefined for ${this.engine.graphics_manager.shader_program!.name}`);
 
         var light_struct = (u_global_ubo.members[array_name] as UBOMemberArray).elements[index] as UBOMemberStruct;
         

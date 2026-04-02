@@ -64,7 +64,7 @@ export class GraphicsManager {
     point_light_shadow_map_texture:Texture;
     point_shadow_depth_buffer:Framebuffer;
     directional_shadow_depth_buffer:Framebuffer;
-    shadow_resolution:number = 1024;
+    shadow_resolution:number = 1024 * 6;
 
     stopping:boolean = false;
     
@@ -500,7 +500,7 @@ export class GraphicsManager {
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
         this.gl.clearColor(0, 0, 0, 0);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-        
+
         this.engine.on_global_update_callback(this.engine, current_time, delta_time);
         this.engine.main_scene.update(current_time, delta_time);
         this.engine.input_manager.update();
@@ -511,7 +511,7 @@ export class GraphicsManager {
             
             const view_matrix = this.engine.main_scene.main_camera_3d.get_view_matrix();
             const projection_matrix = this.engine.main_scene.main_camera_3d.get_projection_matrix(this.canvas);
-            
+
             // RENDER SHADOWS
             for (const light of this.point_lights) {
                 light.draw_shadow_map(
@@ -531,12 +531,17 @@ export class GraphicsManager {
                 );
             }
             
+            for (const shader_program of Object.values(this.shader_programs)) {
+                shader_program.set_all_uniforms();
+            }
+
             this.engine.main_scene.render(
                 view_matrix,
                 projection_matrix,
                 ortho_projection,
                 current_time, delta_time
             );
+
             
         } else {
             console.warn(`The main scene "${this.engine.main_scene.name}" does not have a main camera 3D`);

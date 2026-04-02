@@ -42,7 +42,7 @@ export class SpotLight extends Light {
         var u_global_ubo = this.engine.graphics_manager.shader_program?.ubos["u_global"];
         
         if (u_global_ubo === undefined)
-            throw Error("u_global ubo is undefined");
+            throw Error(`u_global ubo is undefined for ${this.engine.graphics_manager.shader_program!.name}`);
 
         var light_struct = (u_global_ubo.members[array_name] as UBOMemberArray).elements[index] as UBOMemberStruct;
         light_struct.members["position"].set_uniform(new Vec3(world_matrix[12], world_matrix[13], world_matrix[14]));

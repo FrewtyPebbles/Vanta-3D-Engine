@@ -169,8 +169,8 @@ async function startup(engine:Engine) {
     await sphere.set_lua_file("/assets/src/sphere.lua");
 
     const point_light_1 = new PointLight(engine, "point_light", new Vec3(1.0,0.2,0.8), 1.0, 1.0, 1.0, 2.0, 1000.0);
-    // const point_light_2 = new PointLight(engine, "point_light2", new Vec3(0.0,1.0,0.8), 1.0, 1.0, 1.0, 2.0, 1000.0);
-    // const point_light_3 = new PointLight(engine, "point_light3", new Vec3(1.0,0.2,0.8), 1.0, 1.0, 1.0, 2.0, 1000.0);
+    const point_light_2 = new PointLight(engine, "point_light2", new Vec3(0.0,1.0,0.8), 1.0, 1.0, 1.0, 2.0, 1000.0);
+    const point_light_3 = new PointLight(engine, "point_light3", new Vec3(1.0,0.2,0.8), 1.0, 1.0, 1.0, 2.0, 1000.0);
     
     const ocean_light = new DirectionalLight(engine, "ocean_light", new Vec3(0.0,0.0,1.0), 1.0, 1.0, 1.0, 2.0)
     const sun_light = new DirectionalLight(engine, "sun_light", new Vec3(1.0,1.0,0.0), 1.0, 1.0, 1.0, 2.0)
@@ -182,8 +182,8 @@ async function startup(engine:Engine) {
     engine.main_scene.root_node.push_child(anchor);
     engine.main_scene.root_node.push_child(pirate_ship);
     pirate_ship.push_child(point_light_1);
-    // pirate_ship.push_child(point_light_2);
-    // engine.main_scene.root_node.push_child(point_light_3);
+    pirate_ship.push_child(point_light_2);
+    engine.main_scene.root_node.push_child(point_light_3);
     engine.main_scene.root_node.push_child(sun_light);
     engine.main_scene.root_node.push_child(ocean_light);
     engine.main_scene.root_node.push_child(name);
