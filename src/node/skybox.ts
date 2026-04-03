@@ -60,7 +60,7 @@ export class Skybox extends Node {
 
         this.set_uniforms(view_matrix, projection_matrix_3d, projection_matrix_2d, time, delta_time);
 
-        this.shader_program.apply_all_uniforms()
+        gm.shader_program!.apply_all_uniforms()
 
         // render vao
         gm.gl.bindVertexArray(this.vao.vao);

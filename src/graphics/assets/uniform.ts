@@ -31,9 +31,13 @@ class UniformValue {
     true_label:string
     value:UniformVariableType
     is_set:boolean = false
-    constructor(true_label:string, value:UniformVariableType) {
+    transpose:boolean = false;
+    warn:boolean = false;
+    constructor(true_label:string, value:UniformVariableType, transpose:boolean = false, warn:boolean = false) {
         this.true_label = true_label;
         this.value = value;
+        this.transpose = transpose;
+        this.warn = warn;
     }
 }
 
@@ -45,8 +49,6 @@ export class Uniform {
     texture_unit?:number;
 
     values:{[true_label:string]:UniformValue} = {};
-    transpose:boolean = false;
-    warn:boolean = false;
 
     constructor(shader_program:ShaderProgram, label:string, type:WebGLUniformType, is_array:boolean, texture_unit?:number) {
         this.shader_program = shader_program;
@@ -57,15 +59,21 @@ export class Uniform {
     }
 
     set(label:string, value:UniformVariableType, transpose:boolean = false, warn:boolean = false) {
-        this.values[label] = new UniformValue(label, value);
-        this.transpose = transpose;
-        this.warn = warn;
+        if (this.values[label] === undefined)
+            this.values[label] = new UniformValue(label, value, transpose, warn);
+        else if (this.values[label].value.toString() !== value.toString()) {
+            let unif_val = this.values[label];
+            unif_val.value = value;
+            unif_val.transpose = transpose;
+            unif_val.warn = warn;
+            unif_val.is_set = false;
+        }
     }
 
     apply() {
         for (const value of Object.values(this.values)) {
             if (!value.is_set) {
-                this.shader_program.write_uniform(value.true_label, value.value, this.transpose, this.warn);
+                this.shader_program.write_uniform(value.true_label, value.value, value.transpose, value.warn);
                 value.is_set = true;
             }
         }

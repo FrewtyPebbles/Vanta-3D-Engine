@@ -402,7 +402,10 @@ export class GraphicsManager {
         
         
         this.resize_canvas();
-
+        
+        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        this.gl.clearColor(0, 0, 0, 0);
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         
         // Render node heirarchy.
         const ortho_projection = new Mat4().orthoZO(0, this.canvas.width, 0, this.canvas.height, -1, 1);
@@ -415,9 +418,6 @@ export class GraphicsManager {
             this.engine.main_scene.update(view_matrix, projection_matrix, ortho_projection, current_time, delta_time);
             this.engine.input_manager.update();
 
-            this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-            this.gl.clearColor(0, 0, 0, 0);
-            this.gl.clear(this.gl.COLOR_BUFFER_BIT);
             
             // RENDER SHADOWS
             for (const light of this.point_lights) {

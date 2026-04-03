@@ -140,6 +140,10 @@ export class Texture implements Disposable {
         this.cleanup();
     }
 
+    toString():string {
+        return `(Texture "${this.name}" {webgl_texture: ${this.webgl_texture}, width: ${this.width}, height: ${this.height}, image_array_size: ${this.image_array_size}})`;
+    }
+
     cleanup() {
         this.gm.gl.deleteTexture(this.webgl_texture);
     }
@@ -501,6 +505,10 @@ export class CubeMapTexture implements Disposable {
 
     [Symbol.dispose](): void {
         this.cleanup();
+    }
+
+    toString():string {
+        return `(CubeMapTexture "${this.name}" {webgl_texture: ${this.webgl_texture}, size: ${this.size}})`;
     }
 
     cleanup() {

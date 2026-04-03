@@ -60,6 +60,8 @@ export class UBOMember {
         const data = (typeof value === "object" && "toArray" in value) ? (value as any).toArray() : 
                      (Array.isArray(value) ? value : [Number(value)]);
 
+        this.ubo.is_different = true;
+
         switch (this.type) {
             case WebGLUniformType.F: 
                 view.setFloat32(off, data[0], true); break;
@@ -322,6 +324,7 @@ export class UniformBufferObject {
     gl_ubo_index!:number
     static ubo_counter:number = 0
     memory_mirror!:ArrayBuffer
+    is_different:boolean = false
     constructor(shader_program:ShaderProgram, name:string, members:Members, memory_usage_mode:MEMORY_USAGE_MODE = MEMORY_USAGE_MODE.DYNAMIC_DRAW) {
         this.shader_program = shader_program;
         this.graphics_manager = this.shader_program.gm;
@@ -446,6 +449,8 @@ export class UniformBufferObject {
     }
 
     apply(bind:boolean = false) {
+        if (!this.is_different)
+            return
         const gl = this.graphics_manager.gl;
         if (bind)
             gl.bindBuffer(gl.UNIFORM_BUFFER, this.gl_buffer);
@@ -454,6 +459,8 @@ export class UniformBufferObject {
 
         if (bind)
             gl.bindBuffer(gl.UNIFORM_BUFFER, null);
+
+        this.is_different = false;
     }
 
     set_uniform(name_offset:string|number, value:any, bind:boolean = false) {
