@@ -131,8 +131,8 @@ export class InputManager {
     private onMouseMove = (e: MouseEvent) => {
         if (document.pointerLockElement === this.engine.canvas) {
             // Pointer lock mode → use raw movement
-            this.mouse_delta_x = e.movementX;
-            this.mouse_delta_y = e.movementY;
+            this.mouse_delta_x += e.movementX;
+            this.mouse_delta_y += e.movementY;
         } else {
             // Normal mouse mode
             const rect = this.target.getBoundingClientRect();

@@ -179,15 +179,15 @@ export class Node {
     }
 
 
-    protected before_update(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number) {}
-    protected after_update(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number) {}
+    protected before_update(time:number, delta_time:number) {}
+    protected after_update(time:number, delta_time:number) {}
 
-    update(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number) {
-        this.before_update(view_matrix, projection_matrix_3d, projection_matrix_2d, time, delta_time);
+    update(time:number, delta_time:number) {
+        this.before_update(time, delta_time);
         this.on_update(this, this.engine, time, delta_time);
-        this.after_update(view_matrix, projection_matrix_3d, projection_matrix_2d, time, delta_time);
+        this.after_update(time, delta_time);
         for (const child of this.children) {
-            child.update(view_matrix, projection_matrix_3d, projection_matrix_2d, time, delta_time);
+            child.update(time, delta_time);
         }
     }
 

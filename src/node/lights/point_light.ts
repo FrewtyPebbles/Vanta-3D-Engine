@@ -61,11 +61,11 @@ export class PointLight extends Light {
         this.shader_program = shader_program ? shader_program : this.engine.graphics_manager.create_default_point_shadow_shader_program();
     }
 
-    protected before_update(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number): void {
+    protected before_update(time:number, delta_time:number): void {
         this.shader_program.use(false);
     }
 
-    protected after_update(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number): void {
+    protected after_update(time:number, delta_time:number): void {
         this.engine.graphics_manager.clear_shader();
     }
 

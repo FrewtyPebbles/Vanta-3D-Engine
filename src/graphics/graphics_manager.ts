@@ -400,6 +400,9 @@ export class GraphicsManager {
 
         this.last_frame_time = current_time;
         
+        this.engine.on_global_update_callback(this.engine, current_time, delta_time);
+        this.engine.main_scene.update(current_time, delta_time);
+        this.engine.input_manager.update();
         
         this.resize_canvas();
         
@@ -413,11 +416,6 @@ export class GraphicsManager {
             
             const view_matrix = this.engine.main_scene.main_camera_3d.get_view_matrix();
             const projection_matrix = this.engine.main_scene.main_camera_3d.get_projection_matrix(this.canvas);
-            
-            this.engine.on_global_update_callback(this.engine, current_time, delta_time);
-            this.engine.main_scene.update(view_matrix, projection_matrix, ortho_projection, current_time, delta_time);
-            this.engine.input_manager.update();
-
             
             // RENDER SHADOWS
             for (const light of this.point_lights) {
