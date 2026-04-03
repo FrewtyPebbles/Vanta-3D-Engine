@@ -3,6 +3,7 @@ import { GraphicsManager } from "../graphics_manager";
 const UNSIGNED_BYTE = 5121;
 
 const UNSIGNED_INT = 5125;
+const UNSIGNED_SHORT = 5123;
 
 export enum TextureType {
     COLOR = "COLOR",
@@ -54,7 +55,7 @@ export class Texture implements Disposable {
         var image_array_size = 1;
         var texture_parameters:{[parameter_name:number]:number} = {};
         this.format = this.gm.gl.DEPTH_COMPONENT; // Random default, this will be set down the call tree
-        this.internal_format = this.gm.gl.DEPTH_COMPONENT24; // Random default, this will be set down the call tree
+        this.internal_format = this.gm.gl.DEPTH24_STENCIL8; // Random default, this will be set down the call tree
 
         if (typeof arg1 === 'number' && typeof arg2 === 'number' && typeof arg3 === 'string' && Object.values(TextureType).includes(arg3 as TextureType)) {
             // Blank Texture Constructor
@@ -167,9 +168,9 @@ export class Texture implements Disposable {
         let texture = this.gm.gl.createTexture();
         if (!texture) throw new Error("Failed to create texture");
         this.gm.gl.bindTexture(this.gm.gl.TEXTURE_2D_ARRAY, texture);
-        this.internal_format = this.gm.gl.DEPTH_COMPONENT24;
-        this.format = this.gm.gl.DEPTH_COMPONENT;
-        this.image_type = this.gm.gl.UNSIGNED_INT;
+        this.internal_format = this.gm.gl.DEPTH24_STENCIL8;
+        this.format = this.gm.gl.DEPTH_STENCIL;
+        this.image_type = this.gm.gl.UNSIGNED_INT_24_8;
         this.gm.gl.texImage3D(
             this.gm.gl.TEXTURE_2D_ARRAY,
             0,
@@ -309,9 +310,9 @@ export class Texture implements Disposable {
         let texture = this.gm.gl.createTexture();
         if (!texture) throw new Error("Failed to create texture");
         this.gm.gl.bindTexture(this.gm.gl.TEXTURE_2D, texture);
-        this.internal_format = this.gm.gl.DEPTH_COMPONENT24;
-        this.format = this.gm.gl.DEPTH_COMPONENT;
-        this.image_type = this.gm.gl.UNSIGNED_INT;
+        this.internal_format = this.gm.gl.DEPTH24_STENCIL8;
+        this.format = this.gm.gl.DEPTH_STENCIL;
+        this.image_type = this.gm.gl.UNSIGNED_INT_24_8;
         if (image === null)
             this.gm.gl.texImage2D(
                 this.gm.gl.TEXTURE_2D,
@@ -440,7 +441,7 @@ export class CubeMapTexture implements Disposable {
         image_type:number
     );
 
-    constructor(gm:GraphicsManager, name:string, arg1:any, arg2:any, arg3:any = 0, arg4:any = UNSIGNED_INT, arg5:any = {}, arg6?:any|undefined, arg7?:any|undefined, arg8?:any|undefined, arg9?:any|undefined, arg10?:any|undefined, arg11?:any|undefined) {
+    constructor(gm:GraphicsManager, name:string, arg1:any, arg2:any, arg3:any = 0, arg4:any = UNSIGNED_SHORT, arg5:any = {}, arg6?:any|undefined, arg7?:any|undefined, arg8?:any|undefined, arg9?:any|undefined, arg10?:any|undefined, arg11?:any|undefined) {
         this.gm = gm;
         this.name = name;
         
@@ -524,11 +525,11 @@ export class CubeMapTexture implements Disposable {
             this.gm.gl.texImage2D(
                 this.gm.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 
                 mip_level, // mip level
-                this.gm.gl.DEPTH_COMPONENT24, // internal format
+                this.gm.gl.DEPTH24_STENCIL8, // internal format
                 size, size, // width, height
                 0, // border
-                this.gm.gl.DEPTH_COMPONENT, // format
-                image_type, // type
+                this.gm.gl.DEPTH_STENCIL, // format
+                this.gm.gl.UNSIGNED_INT_24_8, // type
                 null // no data yet
             );
         }
@@ -568,7 +569,7 @@ export class CubeMapTexture implements Disposable {
 
         targets.forEach((target, i) => {
             if (images[i] instanceof Float32Array)
-                this.gm.gl.texImage2D(target, mip_level, this.gm.gl.RGBA32F, size, size, 0, this.gm.gl.RGBA, image_type, images[i]);
+                this.gm.gl.texImage2D(target, mip_level, this.gm.gl.RGBA, size, size, 0, this.gm.gl.RGBA, image_type, images[i]);
             else
                 this.gm.gl.texImage2D(target, mip_level, this.gm.gl.RGBA, this.gm.gl.RGBA, image_type, images[i]);
         });

@@ -65,7 +65,7 @@ export class GraphicsManager {
     point_light_shadow_map_texture:Texture;
     point_shadow_depth_buffer:Framebuffer;
     directional_shadow_depth_buffer:Framebuffer;
-    shadow_resolution:number = 1024 * 6;
+    shadow_resolution:number = 2048;
 
     stopping:boolean = false;
 
@@ -82,11 +82,19 @@ export class GraphicsManager {
             colorSpace: 'srgb',
             antialias: true
         })! as WebGL2RenderingContext;
+        
+        const color_buffer_float_extension = this.gl.getExtension('EXT_color_buffer_float');
+        if (color_buffer_float_extension === null) {
+            console.warn('webgl2 was unable to retrive the "EXT_color_buffer_float" extension');
+        }
+
         this.engine = engine;
 
         this.default_2d_shader_program = this.create_default_2d_shader_program();
         this.default_3d_shader_program = this.create_default_3d_shader_program();
         this.default_skybox_shader_program = this.create_default_skybox_shader_program();
+
+        this.shadow_resolution = Math.min(this.shadow_resolution, this.gl.getParameter(this.gl.MAX_TEXTURE_SIZE));
 
         this.directional_light_shadow_map_texture = new Texture(
             this,

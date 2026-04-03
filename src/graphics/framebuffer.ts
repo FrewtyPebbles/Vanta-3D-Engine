@@ -139,7 +139,7 @@ export class Framebuffer implements Disposable {
             case AttachmentType.TEXTURE_ARRAY_DEPTH:
                 this.gl.framebufferTextureLayer(
                     this.gl.FRAMEBUFFER,
-                    this.gl.DEPTH_ATTACHMENT,
+                    this.gl.DEPTH_STENCIL_ATTACHMENT,
                     attachment.texture.webgl_texture,
                     0,
                     index
@@ -197,7 +197,7 @@ export class Framebuffer implements Disposable {
             case AttachmentType.CUBEMAP_TEXTURE_DEPTH:
                 this.gl.framebufferTexture2D(
                     this.gl.FRAMEBUFFER,
-                    this.gl.DEPTH_ATTACHMENT,
+                    this.gl.DEPTH_STENCIL_ATTACHMENT,
                     face,
                     attachment.texture.webgl_texture,
                     0
@@ -261,7 +261,7 @@ export class Framebuffer implements Disposable {
 
         this.gl.framebufferTextureLayer(
             this.gl.FRAMEBUFFER,
-            this.gl.DEPTH_ATTACHMENT,
+            this.gl.DEPTH_STENCIL_ATTACHMENT,
             attachment.texture.webgl_texture,
             0,
             attachment.texture_array_index
@@ -339,7 +339,7 @@ export class Framebuffer implements Disposable {
 
         this.gl.framebufferTexture2D(
             this.gl.FRAMEBUFFER,
-            this.gl.DEPTH_ATTACHMENT,
+            this.gl.DEPTH_STENCIL_ATTACHMENT,
             this.gl.TEXTURE_2D,
             attachment.texture.webgl_texture,
             attachment.mipmap_level === undefined ? 0 : attachment.mipmap_level
@@ -399,7 +399,7 @@ export class Framebuffer implements Disposable {
         faces.forEach((face) => {
             this.gl.framebufferTexture2D(
                 this.gl.FRAMEBUFFER,
-                this.gl.DEPTH_ATTACHMENT,
+                this.gl.DEPTH_STENCIL_ATTACHMENT,
                 face,
                 attachment.texture.webgl_texture,
                 attachment.mipmap_level === undefined ? 0 : attachment.mipmap_level
